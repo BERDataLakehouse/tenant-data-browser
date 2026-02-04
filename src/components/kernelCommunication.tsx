@@ -11,6 +11,11 @@ import { IOutput } from '@jupyterlab/nbformat';
 
 const SESSION_NAME = 'tenant-data-browser';
 
+// Shared session state - singleton to avoid multiple kernel connections
+let sharedSessionContext: SessionContext | undefined;
+let sharedSessionPromise: Promise<SessionContext> | undefined;
+let sharedSessionError: Error | undefined;
+
 export type KernelErrorType =
   | 'not_available'
   | 'not_ready'
@@ -54,109 +59,128 @@ const KERNEL_NAME = 'python3';
 const KERNEL_START_TIMEOUT_MS = 60000;
 const KERNEL_EXEC_TIMEOUT_MS = 30000;
 
-/** Creates and initializes a sessionContext for use with a kernel */
+/** Initialize and return shared session context (singleton) */
+const getOrCreateSharedSession = async (
+  manager: JupyterFrontEnd['serviceManager']
+): Promise<SessionContext> => {
+  // If already initialized, return it
+  if (sharedSessionContext) {
+    return sharedSessionContext;
+  }
+
+  // If initialization is in progress, wait for it
+  if (sharedSessionPromise) {
+    return sharedSessionPromise;
+  }
+
+  // Start initialization
+  sharedSessionPromise = (async () => {
+    // Wait for kernelspecs to be ready
+    await manager.kernelspecs.ready;
+
+    // Check if python3 kernelspec exists
+    const specs = manager.kernelspecs.specs;
+    if (!specs || !specs.kernelspecs[KERNEL_NAME]) {
+      const available = specs
+        ? Object.keys(specs.kernelspecs).join(', ')
+        : 'none';
+      throw new Error(
+        `Kernel '${KERNEL_NAME}' not found. ` + `Available: ${available}`
+      );
+    }
+
+    const sessionContext = new SessionContext({
+      sessionManager: manager.sessions,
+      specsManager: manager.kernelspecs,
+      name: SESSION_NAME
+    });
+
+    const needsKernel = await sessionContext.initialize();
+
+    if (needsKernel) {
+      // Start kernel with timeout
+      const kernelPromise = sessionContext.changeKernel({
+        name: KERNEL_NAME
+      });
+
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(
+            new Error(
+              'Timeout starting kernel after ' +
+                `${KERNEL_START_TIMEOUT_MS / 1000}s`
+            )
+          );
+        }, KERNEL_START_TIMEOUT_MS);
+      });
+
+      await Promise.race([kernelPromise, timeoutPromise]);
+    }
+
+    // Monitor for kernel death and auto-reconnect
+    sessionContext.statusChanged.connect(async () => {
+      const status = sessionContext.session?.kernel?.status;
+      if (status === 'dead') {
+        console.warn('Kernel died, attempting to reconnect...');
+        try {
+          await sessionContext.changeKernel({ name: KERNEL_NAME });
+          sharedSessionError = undefined;
+          console.log('Kernel reconnected successfully');
+        } catch (reconnectError) {
+          sharedSessionError = new Error('Kernel died and reconnection failed');
+          console.error('Failed to reconnect kernel:', reconnectError);
+        }
+      }
+    });
+
+    sharedSessionContext = sessionContext;
+    return sessionContext;
+  })();
+
+  try {
+    return await sharedSessionPromise;
+  } catch (error) {
+    // Clear the promise so retry is possible
+    sharedSessionPromise = undefined;
+    throw error;
+  }
+};
+
+/** Creates and initializes a sessionContext for use with a kernel (shared singleton) */
 export const useSessionContext = (app: JupyterFrontEnd) => {
-  const [sc, setSc] = useState<SessionContext | undefined>();
-  const [error, setError] = useState<Error | undefined>();
-  const [isConnecting, setIsConnecting] = useState(true);
+  const [sc, setSc] = useState<SessionContext | undefined>(
+    sharedSessionContext
+  );
+  const [error, setError] = useState<Error | undefined>(sharedSessionError);
+  const [isConnecting, setIsConnecting] = useState(!sharedSessionContext);
 
   useEffect(() => {
-    const manager = app.serviceManager;
-    let sessionContext: SessionContext | undefined;
+    // If already have shared session, use it
+    if (sharedSessionContext) {
+      setSc(sharedSessionContext);
+      setError(sharedSessionError);
+      setIsConnecting(false);
+      return;
+    }
+
     let disposed = false;
 
     const initSession = async () => {
       try {
-        // Wait for kernelspecs to be ready
-        await manager.kernelspecs.ready;
-
-        // Check if python3 kernelspec exists
-        const specs = manager.kernelspecs.specs;
-        if (!specs || !specs.kernelspecs[KERNEL_NAME]) {
-          const available = specs
-            ? Object.keys(specs.kernelspecs).join(', ')
-            : 'none';
-          throw new Error(
-            `Kernel '${KERNEL_NAME}' not found. ` + `Available: ${available}`
-          );
+        const sessionContext = await getOrCreateSharedSession(
+          app.serviceManager
+        );
+        if (!disposed) {
+          setSc(sessionContext);
+          setError(undefined);
         }
-
-        sessionContext = new SessionContext({
-          sessionManager: manager.sessions,
-          specsManager: manager.kernelspecs,
-          name: SESSION_NAME
-        });
-
-        const needsKernel = await sessionContext.initialize();
-
-        if (disposed) {
-          return;
-        }
-
-        if (needsKernel) {
-          // Start kernel with timeout
-          const kernelPromise = sessionContext.changeKernel({
-            name: KERNEL_NAME
-          });
-
-          const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => {
-              reject(
-                new Error(
-                  'Timeout starting kernel after ' +
-                    `${KERNEL_START_TIMEOUT_MS / 1000}s`
-                )
-              );
-            }, KERNEL_START_TIMEOUT_MS);
-          });
-
-          await Promise.race([kernelPromise, timeoutPromise]);
-        }
-
-        if (disposed) {
-          return;
-        }
-
-        // Monitor for kernel death and auto-reconnect
-        // Use sessionContext.statusChanged (not kernel.statusChanged) so
-        // listener survives kernel restarts
-        const onStatusChange = async () => {
-          if (disposed || !sessionContext) {
-            return;
-          }
-          const status = sessionContext.session?.kernel?.status;
-          if (status === 'dead') {
-            console.warn('Kernel died, attempting to reconnect...');
-            setIsConnecting(true);
-            try {
-              await sessionContext.changeKernel({ name: KERNEL_NAME });
-              if (!disposed) {
-                setError(undefined);
-                console.log('Kernel reconnected successfully');
-              }
-            } catch (reconnectError) {
-              if (!disposed) {
-                setError(new Error('Kernel died and reconnection failed'));
-                console.error('Failed to reconnect kernel:', reconnectError);
-              }
-            } finally {
-              if (!disposed) {
-                setIsConnecting(false);
-              }
-            }
-          }
-        };
-        sessionContext.statusChanged.connect(onStatusChange);
-
-        setSc(sessionContext);
       } catch (reason) {
-        if (disposed) {
-          return;
+        if (!disposed) {
+          const message =
+            reason instanceof Error ? reason.message : String(reason);
+          setError(new Error(message));
+          console.error('Failed to initialize kernel session:', reason);
         }
-        const message =
-          reason instanceof Error ? reason.message : String(reason);
-        setError(new Error(message));
-        console.error('Failed to initialize kernel session:', reason);
       } finally {
         if (!disposed) {
           setIsConnecting(false);
@@ -168,10 +192,6 @@ export const useSessionContext = (app: JupyterFrontEnd) => {
 
     return () => {
       disposed = true;
-      sessionContext?.dispose();
-      setSc(undefined);
-      setError(undefined);
-      setIsConnecting(true);
     };
   }, [app.serviceManager]);
 
