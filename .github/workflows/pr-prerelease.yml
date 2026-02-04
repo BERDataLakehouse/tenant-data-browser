@@ -31,9 +31,11 @@ jobs:
     - name: Get package version
       id: package_version
       run: |
-        VERSION=$(python -c "import json; print(json.load(open('package.json'))['version'])")
+        # Extract version from the actual built wheel filename (hatch-vcs generates dynamic versions)
+        WHEEL_FILE=$(ls dist/tenant_data_browser-*.whl | head -1)
+        VERSION=$(basename "$WHEEL_FILE" | sed -n 's/tenant_data_browser-\(.*\)-py3-none-any\.whl/\1/p')
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "prerelease_tag=v$VERSION-pr${{ github.event.number }}-${{ github.sha }}" >> $GITHUB_OUTPUT
+        echo "prerelease_tag=v$VERSION-pr${{ github.event.number }}" >> $GITHUB_OUTPUT
 
     - name: Create prerelease
       id: create_release
