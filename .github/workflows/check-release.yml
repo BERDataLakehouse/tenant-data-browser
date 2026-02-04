@@ -1,9 +1,8 @@
 name: Check Release
+# Disabled: incompatible with hatch-vcs git tag-based versioning
+# jupyter-releaser tries to set version, but hatch-vcs is read-only
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["*"]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -26,5 +25,5 @@ jobs:
       - name: Upload Distributions
         uses: actions/upload-artifact@v4
         with:
-          name: cdm_tree_browser-releaser-dist-${{ github.run_number }}
+          name: tenant_data_browser-releaser-dist-${{ github.run_number }}
           path: .jupyter_releaser_checkout/dist

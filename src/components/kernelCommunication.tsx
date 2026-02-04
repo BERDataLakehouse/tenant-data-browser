@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { Kernel, KernelMessage } from '@jupyterlab/services';
 import { IOutput } from '@jupyterlab/nbformat';
 
-const SESSION_NAME = 'cdm-tree-browser';
+const SESSION_NAME = 'tenant-data-browser';
 
 export type KernelErrorType =
   | 'not_available'

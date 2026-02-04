@@ -1,6 +1,6 @@
-# cdm_tree_browser
+# tenant_data_browser
 
-[![Github Actions Status](https://github.com/kbaseincubator/cdm-tree-browser/workflows/Build/badge.svg)](https://github.com/kbaseincubator/cdm-tree-browser/actions/workflows/build.yml)
+[![Github Actions Status](https://github.com/BERDataLakehouse/tenant-data-browser/workflows/Build/badge.svg)](https://github.com/BERDataLakehouse/tenant-data-browser/actions/workflows/build.yml)
 
 A JupyterLab extension for browsing file/data trees in KBase CDM JupyterLab.
 
@@ -13,7 +13,7 @@ A JupyterLab extension for browsing file/data trees in KBase CDM JupyterLab.
 To install the extension, execute:
 
 ```bash
-pip install cdm_tree_browser
+pip install tenant_data_browser
 ```
 
 ## Uninstall
@@ -21,7 +21,7 @@ pip install cdm_tree_browser
 To remove the extension, execute:
 
 ```bash
-pip uninstall cdm_tree_browser
+pip uninstall tenant_data_browser
 ```
 
 ## Contributing
@@ -36,7 +36,7 @@ The `jlpm` command is JupyterLab's pinned version of
 
 ```bash
 # Clone the repo to your local environment
-# Change directory to the cdm_tree_browser directory
+# Change directory to the tenant_data_browser directory
 # Install package in development mode
 pip install -e "."
 # Link your development version of the extension with JupyterLab
@@ -65,12 +65,12 @@ jupyter lab build --minimize=False
 ### Development uninstall
 
 ```bash
-pip uninstall cdm_tree_browser
+pip uninstall tenant_data_browser
 ```
 
 In development mode, you will also need to remove the symlink created by `jupyter labextension develop`
 command. To find its location, you can run `jupyter labextension list` to figure out where the `labextensions`
-folder is located. Then you can remove the symlink named `cdm-tree-browser` within that folder.
+folder is located. Then you can remove the symlink named `tenant-data-browser` within that folder.
 
 ### Testing the extension
 

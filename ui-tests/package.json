@@ -1,7 +1,7 @@
 {
-  "name": "cdm-tree-browser-ui-tests",
+  "name": "tenant-data-browser-ui-tests",
   "version": "1.0.0",
-  "description": "JupyterLab cdm-tree-browser Integration Tests",
+  "description": "JupyterLab tenant-data-browser Integration Tests",
   "private": true,
   "scripts": {
     "start": "jupyter lab --config jupyter_server_test_config.py",

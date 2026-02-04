@@ -5,6 +5,7 @@ on:
     branches: main
   pull_request:
     branches: '*'
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -17,6 +18,9 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        fetch-tags: true
 
     - name: Base Setup
       uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
@@ -41,7 +45,7 @@ jobs:
         python -m pip install .[test]
 
         jupyter labextension list
-        jupyter labextension list 2>&1 | grep -ie "cdm-tree-browser.*OK"
+        jupyter labextension list 2>&1 | grep -ie "tenant-data-browser.*OK"
         python -m jupyterlab.browser_check
 
     - name: Package the extension
@@ -50,13 +54,13 @@ jobs:
 
         pip install build
         python -m build
-        pip uninstall -y "cdm_tree_browser" jupyterlab
+        pip uninstall -y "tenant_data_browser" jupyterlab
 
     - name: Upload extension packages
       uses: actions/upload-artifact@v4
       with:
         name: extension-artifacts
-        path: dist/cdm_tree_browser*
+        path: dist/tenant_data_browser*
         if-no-files-found: error
 
   test_isolated:
@@ -79,11 +83,11 @@ jobs:
         sudo rm -rf $(which node)
         sudo rm -rf $(which node)
 
-        pip install "jupyterlab>=4.0.0,<5" cdm_tree_browser*.whl
+        pip install "jupyterlab>=4.0.0,<5" tenant_data_browser*.whl
 
 
         jupyter labextension list
-        jupyter labextension list 2>&1 | grep -ie "cdm-tree-browser.*OK"
+        jupyter labextension list 2>&1 | grep -ie "tenant-data-browser.*OK"
         python -m jupyterlab.browser_check --no-browser-test
 
   integration-tests:
@@ -97,6 +101,9 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        fetch-tags: true
 
     - name: Base Setup
       uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
@@ -109,7 +116,7 @@ jobs:
     - name: Install the extension
       run: |
         set -eux
-        python -m pip install "jupyterlab>=4.0.0,<5" cdm_tree_browser*.whl
+        python -m pip install "jupyterlab>=4.0.0,<5" tenant_data_browser*.whl
 
     - name: Install dependencies
       working-directory: ui-tests
@@ -138,7 +145,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: cdm_tree_browser-playwright-tests
+        name: tenant_data_browser-playwright-tests
         path: |
           ui-tests/test-results
           ui-tests/playwright-report

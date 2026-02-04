@@ -6,7 +6,7 @@
  */
 
 /** Command ID for opening tenant tabs */
-export const CMD_OPEN_TAB = 'cdm-tree-browser:open-tab';
+export const CMD_OPEN_TAB = 'tenant-data-browser:open-tab';
 
 /** Target for opening tenant tab */
 export type TenantTabTarget =

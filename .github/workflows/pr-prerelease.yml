@@ -53,7 +53,7 @@ jobs:
           
           Install this prerelease using:
           ```bash
-          pip install https://github.com/${{ github.repository }}/releases/download/${{ steps.package_version.outputs.prerelease_tag }}/cdm_tree_browser-${{ steps.package_version.outputs.version }}-py3-none-any.whl
+          pip install https://github.com/${{ github.repository }}/releases/download/${{ steps.package_version.outputs.prerelease_tag }}/tenant_data_browser-${{ steps.package_version.outputs.version }}-py3-none-any.whl
           ```
           
           This is an automated prerelease created when the PR was opened.
@@ -66,8 +66,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dist/cdm_tree_browser-${{ steps.package_version.outputs.version }}-py3-none-any.whl
-        asset_name: cdm_tree_browser-${{ steps.package_version.outputs.version }}-py3-none-any.whl
+        asset_path: dist/tenant_data_browser-${{ steps.package_version.outputs.version }}-py3-none-any.whl
+        asset_name: tenant_data_browser-${{ steps.package_version.outputs.version }}-py3-none-any.whl
         asset_content_type: application/zip
 
     - name: Upload source distribution to release
@@ -76,8 +76,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dist/cdm_tree_browser-${{ steps.package_version.outputs.version }}.tar.gz
-        asset_name: cdm_tree_browser-${{ steps.package_version.outputs.version }}.tar.gz
+        asset_path: dist/tenant_data_browser-${{ steps.package_version.outputs.version }}.tar.gz
+        asset_name: tenant_data_browser-${{ steps.package_version.outputs.version }}.tar.gz
         asset_content_type: application/gzip
 
     - name: Comment on PR

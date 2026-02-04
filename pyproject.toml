@@ -1,9 +1,9 @@
 [build-system]
-requires = ["hatchling>=1.5.0", "jupyterlab>=4.0.0,<5", "hatch-nodejs-version>=0.3.2"]
+requires = ["hatchling>=1.5.0", "jupyterlab>=4.0.0,<5", "hatch-vcs>=0.4.0", "hatch-nodejs-version>=0.3.2"]
 build-backend = "hatchling.build"
 
 [project]
-name = "cdm_tree_browser"
+name = "tenant_data_browser"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.9"
@@ -27,30 +27,33 @@ dependencies = [
 dynamic = ["version", "description", "authors", "urls", "keywords"]
 
 [tool.hatch.version]
-source = "nodejs"
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+local_scheme = "no-local-version"
 
 [tool.hatch.metadata.hooks.nodejs]
 fields = ["description", "authors", "urls", "keywords"]
 
 [tool.hatch.build.targets.sdist]
-artifacts = ["cdm_tree_browser/labextension"]
+artifacts = ["tenant_data_browser/labextension"]
 exclude = [".github", "binder"]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"cdm_tree_browser/labextension" = "share/jupyter/labextensions/cdm-tree-browser"
-"install.json" = "share/jupyter/labextensions/cdm-tree-browser/install.json"
+"tenant_data_browser/labextension" = "share/jupyter/labextensions/tenant-data-browser"
+"install.json" = "share/jupyter/labextensions/tenant-data-browser/install.json"
 
 [tool.hatch.build.hooks.version]
-path = "cdm_tree_browser/_version.py"
+path = "tenant_data_browser/_version.py"
 
 [tool.hatch.build.hooks.jupyter-builder]
 dependencies = ["hatch-jupyter-builder>=0.5"]
 build-function = "hatch_jupyter_builder.npm_builder"
 ensured-targets = [
-    "cdm_tree_browser/labextension/static/style.js",
-    "cdm_tree_browser/labextension/package.json",
+    "tenant_data_browser/labextension/static/style.js",
+    "tenant_data_browser/labextension/package.json",
 ]
-skip-if-exists = ["cdm_tree_browser/labextension/static/style.js"]
+skip-if-exists = ["tenant_data_browser/labextension/static/style.js"]
 
 [tool.hatch.build.hooks.jupyter-builder.build-kwargs]
 build_cmd = "build:prod"
@@ -60,7 +63,7 @@ npm = ["jlpm"]
 build_cmd = "install:extension"
 npm = ["jlpm"]
 source_dir = "src"
-build_dir = "cdm_tree_browser/labextension"
+build_dir = "tenant_data_browser/labextension"
 
 [tool.jupyter-releaser.options]
 version_cmd = "hatch version"

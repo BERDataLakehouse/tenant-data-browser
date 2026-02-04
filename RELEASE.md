@@ -1,4 +1,4 @@
-# Making a new release of cdm_tree_browser
+# Making a new release of tenant_data_browser
 
 The extension can be published to `PyPI` and `npm` manually or using the [Jupyter Releaser](https://github.com/jupyter-server/jupyter_releaser).
 

@@ -27,7 +27,7 @@ import { ContextMenu } from '../ContextMenu';
 import { showError } from '../utils/errorUtil';
 import { debounce } from '../utils/debounce';
 
-const STATE_KEY_OPEN_NODES = 'cdm-tree-browser:open-nodes';
+const STATE_KEY_OPEN_NODES = 'tenant-data-browser:open-nodes';
 const DEBOUNCE_DELAY_MS = 500;
 
 interface ITreeBrowserProps {

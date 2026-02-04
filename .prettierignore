@@ -3,5 +3,5 @@ node_modules
 **/lib
 **/package.json
 !/package.json
-cdm_tree_browser
+tenant_data_browser
 .venv

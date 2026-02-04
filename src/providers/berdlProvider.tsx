@@ -38,7 +38,7 @@ const PERSONAL_NODE_ID = '__user_databases__';
 type BerdlNodeType = 'userData' | 'tenant' | 'database' | 'table';
 
 const BERDL_METHODS_IMPORT =
-  'import cdm_tree_browser; (get_table_schema, get_databases, get_tables, get_my_groups, get_namespace_prefix, using_mocks) = cdm_tree_browser.get_cdm_methods();';
+  'import tenant_data_browser; (get_table_schema, get_databases, get_tables, get_my_groups, get_namespace_prefix, using_mocks) = tenant_data_browser.get_cdm_methods();';
 
 // BERDL Database Provider - fetches tenant, database and table structure
 export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {

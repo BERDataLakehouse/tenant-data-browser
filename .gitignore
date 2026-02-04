@@ -7,9 +7,9 @@ node_modules/
 *.egg-info/
 .ipynb_checkpoints
 *.tsbuildinfo
-cdm_tree_browser/labextension
+tenant_data_browser/labextension
 # Version file is handled by hatchling
-cdm_tree_browser/_version.py
+tenant_data_browser/_version.py
 
 # Integration tests
 ui-tests/test-results/

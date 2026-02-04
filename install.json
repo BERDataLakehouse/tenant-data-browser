@@ -1,5 +1,5 @@
 {
   "packageManager": "python",
-  "packageName": "cdm_tree_browser",
-  "uninstallInstructions": "Use your Python package manager (pip, conda, etc.) to uninstall the package cdm_tree_browser"
+  "packageName": "tenant_data_browser",
+  "uninstallInstructions": "Use your Python package manager (pip, conda, etc.) to uninstall the package tenant_data_browser"
 }

@@ -6,10 +6,10 @@ author_name: KBase
 has_binder: false
 has_settings: false
 kind: frontend
-labextension_name: cdm-tree-browser
+labextension_name: tenant-data-browser
 project_short_description: A JupyterLab extension for browsing file/data trees in
     KBase CDM JupyterLab.
-python_name: cdm_tree_browser
-repository: https://github.com/kbaseincubator/cdm-tree-browser
+python_name: tenant_data_browser
+repository: https://github.com/BERDataLakehouse/tenant-data-browser
 test: true
 

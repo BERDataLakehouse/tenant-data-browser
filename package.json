@@ -1,15 +1,15 @@
 {
-    "name": "cdm-tree-browser",
-    "version": "0.1.0",
+    "name": "tenant-data-browser",
+    "version": "0.0.0",
     "description": "A JupyterLab extension for browsing file/data trees in KBase CDM JupyterLab.",
     "keywords": [
         "jupyter",
         "jupyterlab",
         "jupyterlab-extension"
     ],
-    "homepage": "https://github.com/kbaseincubator/cdm-tree-browser",
+    "homepage": "https://github.com/BERDataLakehouse/tenant-data-browser",
     "bugs": {
-        "url": "https://github.com/kbaseincubator/cdm-tree-browser/issues"
+        "url": "https://github.com/BERDataLakehouse/tenant-data-browser/issues"
     },
     "license": "BSD-3-Clause",
     "author": {
@@ -26,7 +26,7 @@
     "style": "style/index.css",
     "repository": {
         "type": "git",
-        "url": "https://github.com/kbaseincubator/cdm-tree-browser.git"
+        "url": "https://github.com/BERDataLakehouse/tenant-data-browser.git"
     },
     "scripts": {
         "build": "jlpm build:lib && jlpm build:labextension:dev",
@@ -38,7 +38,7 @@
         "clean": "jlpm clean:lib",
         "clean:lib": "rimraf lib tsconfig.tsbuildinfo",
         "clean:lintcache": "rimraf .eslintcache .stylelintcache",
-        "clean:labextension": "rimraf cdm_tree_browser/labextension cdm_tree_browser/_version.py",
+        "clean:labextension": "rimraf tenant_data_browser/labextension tenant_data_browser/_version.py",
         "clean:all": "jlpm clean:lib && jlpm clean:labextension && jlpm clean:lintcache",
         "eslint": "jlpm eslint:check --fix",
         "eslint:check": "eslint . --cache --ext .ts,.tsx",
@@ -106,7 +106,7 @@
     },
     "jupyterlab": {
         "extension": true,
-        "outputDir": "cdm_tree_browser/labextension"
+        "outputDir": "tenant_data_browser/labextension"
     },
     "eslintIgnore": [
         "node_modules",

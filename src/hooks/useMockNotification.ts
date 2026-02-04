@@ -4,7 +4,7 @@ import { showSuccess } from '../utils/errorUtil';
 import { queryKernel } from '../components/kernelCommunication';
 
 const BERDL_METHODS_IMPORT =
-  'import cdm_tree_browser; (get_table_schema, get_databases, get_tables, get_my_groups, get_namespace_prefix, using_mocks) = cdm_tree_browser.get_cdm_methods();';
+  'import tenant_data_browser; (get_table_schema, get_databases, get_tables, get_my_groups, get_namespace_prefix, using_mocks) = tenant_data_browser.get_cdm_methods();';
 
 /**
  * Hook to check if CDM methods are using mocks and show a success notification
@@ -37,7 +37,7 @@ export function useMockNotification(
         ) {
           const textOutput = data.data['text/plain'] as string;
           if (textOutput && textOutput.trim() === 'True') {
-            showSuccess('CDM Tree Browser is using mock data');
+            showSuccess('Tenant Data Browser is using mock data');
           }
         }
       } catch (error) {
