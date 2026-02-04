@@ -9,6 +9,7 @@ import {
   queryKernel,
   parseKernelOutputJSON
 } from './components/kernelCommunication';
+import { fetchFilteredDatabases } from './utils/databaseUtils';
 
 const BERDL_METHODS_IMPORT =
   'import tenant_data_browser; (get_table_schema, get_databases, get_tables, get_my_groups, get_namespace_prefix, using_mocks) = tenant_data_browser.get_cdm_methods();';
@@ -309,19 +310,11 @@ export const TenantTabContent: FC<ITenantTabContentProps> = ({
 
   const databasesQuery = useQuery({
     queryKey: ['databases', target.tenant],
-    queryFn: async () => {
+    queryFn: () => {
       if (!sessionContext) {
         throw new Error('No session context');
       }
-      const { data, error } = await queryKernel(
-        `${BERDL_METHODS_IMPORT} result = get_databases(use_hms=True, return_json=True, filter_by_namespace=True); result`,
-        sessionContext
-      );
-      if (error) {
-        throw error;
-      }
-      const databases = parseKernelOutputJSON<string[]>(data);
-      return databases || [];
+      return fetchFilteredDatabases(sessionContext, target.tenant);
     },
     enabled: !!sessionContext
   });
