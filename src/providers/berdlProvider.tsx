@@ -17,20 +17,13 @@ import {
   queryKernel
 } from '../components/kernelCommunication';
 import { insertCodeCell } from '../utils/notebookUtils';
+import { fetchFilteredDatabases } from '../utils/databaseUtils';
 
 /** Response from get_my_groups function */
 interface IGroupsResponse {
   username: string;
   groups: string[];
   group_count: number;
-}
-
-/** Response from get_namespace_prefix function */
-interface INamespacePrefixResponse {
-  username: string;
-  user_namespace_prefix: string;
-  tenant: string | null;
-  tenant_namespace_prefix: string | null;
 }
 
 const PERSONAL_NODE_ID = '__user_databases__';
@@ -201,31 +194,8 @@ export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
       node: BaseTreeNodeType<'userData'>,
       sessionContext: SessionContext
     ): Promise<BaseTreeNodeType<'database'>[]> => {
-      const { data, error } = await queryKernel(
-        `import json; ${BERDL_METHODS_IMPORT} databases = get_databases(use_hms=True, return_json=False, filter_by_namespace=True); prefix_response = get_namespace_prefix(tenant=None, return_json=False); result = {"databases": databases, "prefix": prefix_response}; json.dumps(result)`,
-        sessionContext
-      );
-
-      if (error) {
-        console.warn('BERDL provider: Failed to fetch user databases:', error);
-        throw error;
-      }
-
-      const response = parseKernelOutputJSON<{
-        databases: string[];
-        prefix: INamespacePrefixResponse;
-      }>(data);
-
-      if (!response || !response.databases) {
-        return [];
-      }
-
-      const userPrefix = response.prefix.user_namespace_prefix;
-      const filteredDatabases = userPrefix
-        ? response.databases.filter(db => db.startsWith(userPrefix))
-        : [];
-
-      return filteredDatabases.map(databaseName => ({
+      const databases = await fetchFilteredDatabases(sessionContext, undefined);
+      return databases.map(databaseName => ({
         id: `${node.id}/${databaseName}`,
         name: databaseName,
         type: 'database' as const,
@@ -236,34 +206,8 @@ export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
       node: BaseTreeNodeType<'tenant'>,
       sessionContext: SessionContext
     ): Promise<BaseTreeNodeType<'database'>[]> => {
-      const { data, error } = await queryKernel(
-        `import json; ${BERDL_METHODS_IMPORT} databases = get_databases(use_hms=True, return_json=False, filter_by_namespace=True); prefix_response = get_namespace_prefix(tenant="${node.name}", return_json=False); result = {"databases": databases, "prefix": prefix_response}; json.dumps(result)`,
-        sessionContext
-      );
-
-      if (error) {
-        console.warn(
-          `BERDL provider: Failed to fetch databases for tenant ${node.name}:`,
-          error
-        );
-        throw error;
-      }
-
-      const response = parseKernelOutputJSON<{
-        databases: string[];
-        prefix: INamespacePrefixResponse;
-      }>(data);
-
-      if (!response || !response.databases) {
-        return [];
-      }
-
-      const tenantPrefix = response.prefix.tenant_namespace_prefix;
-      const filteredDatabases = tenantPrefix
-        ? response.databases.filter(db => db.startsWith(tenantPrefix))
-        : [];
-
-      return filteredDatabases.map(databaseName => ({
+      const databases = await fetchFilteredDatabases(sessionContext, node.name);
+      return databases.map(databaseName => ({
         id: `${node.id}/${databaseName}`,
         name: databaseName,
         type: 'database' as const,
