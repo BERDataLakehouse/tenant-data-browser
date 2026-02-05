@@ -20,6 +20,9 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Remove prerelease tags (not PEP 440 valid, breaks hatch-vcs)
+        run: git tag -l '*-pr*' | xargs -r git tag -d
+
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
 
       - name: Install dependencies
