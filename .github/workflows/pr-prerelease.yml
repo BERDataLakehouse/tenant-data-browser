@@ -2,94 +2,98 @@ name: PR Prerelease
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened, closed]
     branches: [main]
 
-permissions:
-  contents: write
-  pull-requests: read
-  actions: read
-
 jobs:
-  build:
-    uses: ./.github/workflows/build.yml
-
-  prerelease:
-    needs: build
+  create_prerelease:
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      tag: ${{ steps.create.outputs.tag }}
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
-    - name: Download extension artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: extension-artifacts
-        path: dist/
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-    - name: Get package version
-      id: package_version
-      run: |
-        # Extract version from the actual built wheel filename (hatch-vcs generates dynamic versions)
-        WHEEL_FILE=$(ls dist/tenant_data_browser-*.whl | head -1)
-        VERSION=$(basename "$WHEEL_FILE" | sed -n 's/tenant_data_browser-\(.*\)-py3-none-any\.whl/\1/p')
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "prerelease_tag=v$VERSION-pr${{ github.event.number }}" >> $GITHUB_OUTPUT
+      - name: Get version from hatch-vcs
+        id: version
+        run: |
+          pip install hatch hatch-vcs
+          version=$(hatch version)
+          echo "version=$version" >> $GITHUB_OUTPUT
 
-    - name: Create prerelease
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.package_version.outputs.prerelease_tag }}
-        release_name: "Prerelease ${{ steps.package_version.outputs.prerelease_tag }}"
-        body: |
-          Prerelease for PR #${{ github.event.number }}
-          
-          **Changes in this PR:**
-          ${{ github.event.pull_request.title }}
-          
-          ## Installation
-          
-          Install this prerelease using:
-          ```bash
-          pip install https://github.com/${{ github.repository }}/releases/download/${{ steps.package_version.outputs.prerelease_tag }}/tenant_data_browser-${{ steps.package_version.outputs.version }}-py3-none-any.whl
-          ```
-          
-          This is an automated prerelease created when the PR was opened.
-        draft: false
-        prerelease: true
+      - name: Create or update prerelease
+        id: create
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="v${{ steps.version.outputs.version }}-pr${{ github.event.pull_request.number }}"
+          echo "tag=$tag" >> $GITHUB_OUTPUT
 
-    - name: Upload wheel to release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dist/tenant_data_browser-${{ steps.package_version.outputs.version }}-py3-none-any.whl
-        asset_name: tenant_data_browser-${{ steps.package_version.outputs.version }}-py3-none-any.whl
-        asset_content_type: application/zip
+          gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
 
-    - name: Upload source distribution to release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dist/tenant_data_browser-${{ steps.package_version.outputs.version }}.tar.gz
-        asset_name: tenant_data_browser-${{ steps.package_version.outputs.version }}.tar.gz
-        asset_content_type: application/gzip
+          gh release create "$tag" \
+            --title "PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}" \
+            --notes "Prerelease for PR #${{ github.event.pull_request.number }}
 
-    - name: Comment on PR
-      if: github.event.action == 'opened'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: `🚀 Prerelease created: [${{ steps.package_version.outputs.prerelease_tag }}](https://github.com/${{ github.repository }}/releases/tag/${{ steps.package_version.outputs.prerelease_tag }})`
-          })
+          **Branch:** \`${{ github.event.pull_request.head.ref }}\`
+          **Commit:** ${{ github.sha }}" \
+            --prerelease \
+            --target "${{ github.sha }}"
+
+      - name: Comment on PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ steps.create.outputs.tag }}"
+          comment_body="<!-- kbase-prerelease-comment -->
+          **Prerelease:** [$tag](${{ github.event.repository.html_url }}/releases/tag/${tag})
+
+          _Wheel will be attached once the build completes. Updated on each push._"
+
+          existing=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --jq '.[] | select(.body | contains("kbase-prerelease-comment")) | .id' | head -n1)
+
+          if [ -n "$existing" ]; then
+            gh api "repos/${{ github.repository }}/issues/comments/$existing" \
+              --method PATCH --field body="$comment_body"
+          else
+            gh pr comment "${{ github.event.pull_request.number }}" --body "$comment_body"
+          fi
+
+  build:
+    needs: create_prerelease
+    uses: ./.github/workflows/build-wheel.yml
+    with:
+      release_tag: ${{ needs.create_prerelease.outputs.tag }}
+    permissions:
+      contents: write
+
+  cleanup:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Delete PR prerelease
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pr_num="${{ github.event.pull_request.number }}"
+          tags=$(gh release list --limit 100 --json tagName \
+            --jq ".[].tagName | select(endswith(\"-pr${pr_num}\"))" 2>/dev/null || true)
+          for tag in $tags; do
+            echo "Deleting $tag"
+            gh release delete "$tag" --yes --cleanup-tag || true
+          done
