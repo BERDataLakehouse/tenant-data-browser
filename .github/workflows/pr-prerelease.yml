@@ -1,95 +1,85 @@
-name: PR Prerelease
+name: PR
 
 on:
   pull_request:
-    types: [opened, synchronize]
-    branches: [main]
-
-permissions:
-  contents: write
-  pull-requests: read
-  actions: read
+    types: [opened, synchronize, reopened, closed]
+    branches: '*'
 
 jobs:
-  build:
+  ci:
+    if: github.event.action != 'closed'
     uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
 
-  prerelease:
-    needs: build
+  create_prerelease:
+    if: >
+      github.event.action != 'closed' &&
+      github.event.pull_request.base.ref == 'main'
+    needs: ci
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Download extension artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: extension-artifacts
-        path: dist/
+      - uses: actions/download-artifact@v4
+        with:
+          name: extension-artifacts
+          path: dist/
 
-    - name: Get package version
-      id: package_version
-      run: |
-        # Extract version from the actual built wheel filename (hatch-vcs generates dynamic versions)
-        WHEEL_FILE=$(ls dist/tenant_data_browser-*.whl | head -1)
-        VERSION=$(basename "$WHEEL_FILE" | sed -n 's/tenant_data_browser-\(.*\)-py3-none-any\.whl/\1/p')
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "prerelease_tag=v$VERSION-pr${{ github.event.number }}" >> $GITHUB_OUTPUT
+      - name: Create or update prerelease
+        id: create
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="pr-${{ github.event.pull_request.number }}"
+          echo "tag=$tag" >> $GITHUB_OUTPUT
 
-    - name: Create prerelease
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.package_version.outputs.prerelease_tag }}
-        release_name: "Prerelease ${{ steps.package_version.outputs.prerelease_tag }}"
-        body: |
-          Prerelease for PR #${{ github.event.number }}
-          
-          **Changes in this PR:**
-          ${{ github.event.pull_request.title }}
-          
-          ## Installation
-          
-          Install this prerelease using:
-          ```bash
-          pip install https://github.com/${{ github.repository }}/releases/download/${{ steps.package_version.outputs.prerelease_tag }}/tenant_data_browser-${{ steps.package_version.outputs.version }}-py3-none-any.whl
-          ```
-          
-          This is an automated prerelease created when the PR was opened.
-        draft: false
-        prerelease: true
+          gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
 
-    - name: Upload wheel to release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dist/tenant_data_browser-${{ steps.package_version.outputs.version }}-py3-none-any.whl
-        asset_name: tenant_data_browser-${{ steps.package_version.outputs.version }}-py3-none-any.whl
-        asset_content_type: application/zip
+          gh release create "$tag" \
+            --title "PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}" \
+            --notes "Prerelease for PR #${{ github.event.pull_request.number }}
 
-    - name: Upload source distribution to release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dist/tenant_data_browser-${{ steps.package_version.outputs.version }}.tar.gz
-        asset_name: tenant_data_browser-${{ steps.package_version.outputs.version }}.tar.gz
-        asset_content_type: application/gzip
+          **Branch:** \`${{ github.event.pull_request.head.ref }}\`
+          **Commit:** ${{ github.sha }}" \
+            --prerelease \
+            --target "${{ github.sha }}" \
+            dist/*.whl
 
-    - name: Comment on PR
-      if: github.event.action == 'opened'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: `🚀 Prerelease created: [${{ steps.package_version.outputs.prerelease_tag }}](https://github.com/${{ github.repository }}/releases/tag/${{ steps.package_version.outputs.prerelease_tag }})`
-          })
+      - name: Comment on PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ steps.create.outputs.tag }}"
+          comment_body="<!-- kbase-prerelease-comment -->
+          **Prerelease:** [$tag](${{ github.event.repository.html_url }}/releases/tag/${tag})
+
+          _Wheel will be attached once the build completes. Updated on each push._"
+
+          existing=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --jq '.[] | select(.body | contains("kbase-prerelease-comment")) | .id' | head -n1)
+
+          if [ -n "$existing" ]; then
+            gh api "repos/${{ github.repository }}/issues/comments/$existing" \
+              --method PATCH --field body="$comment_body"
+          else
+            gh pr comment "${{ github.event.pull_request.number }}" --body "$comment_body"
+          fi
+
+  cleanup:
+    if: >
+      github.event.action == 'closed' &&
+      github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Delete PR prerelease
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="pr-${{ github.event.pull_request.number }}"
+          gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
