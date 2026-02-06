@@ -1,19 +1,26 @@
-name: PR Prerelease
+name: PR
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
-    branches: [main]
+    branches: '*'
 
 jobs:
-  create_prerelease:
+  ci:
     if: github.event.action != 'closed'
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+
+  create_prerelease:
+    if: >
+      github.event.action != 'closed' &&
+      github.event.pull_request.base.ref == 'main'
+    needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
-    outputs:
-      tag: ${{ steps.create.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,6 +37,11 @@ jobs:
           pip install hatch hatch-vcs
           version=$(hatch version)
           echo "version=$version" >> $GITHUB_OUTPUT
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: extension-artifacts
+          path: dist/
 
       - name: Create or update prerelease
         id: create
@@ -48,7 +60,8 @@ jobs:
           **Branch:** \`${{ github.event.pull_request.head.ref }}\`
           **Commit:** ${{ github.sha }}" \
             --prerelease \
-            --target "${{ github.sha }}"
+            --target "${{ github.sha }}" \
+            dist/*.whl
 
       - name: Comment on PR
         env:
@@ -70,16 +83,10 @@ jobs:
             gh pr comment "${{ github.event.pull_request.number }}" --body "$comment_body"
           fi
 
-  build:
-    needs: create_prerelease
-    uses: ./.github/workflows/build-wheel.yml
-    with:
-      release_tag: ${{ needs.create_prerelease.outputs.tag }}
-    permissions:
-      contents: write
-
   cleanup:
-    if: github.event.action == 'closed'
+    if: >
+      github.event.action == 'closed' &&
+      github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
