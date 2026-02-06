@@ -1,42 +1,40 @@
-name: PR Prerelease
+name: PR
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
-    branches: [main]
+    branches: '*'
 
 jobs:
-  create_prerelease:
+  ci:
     if: github.event.action != 'closed'
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+
+  create_prerelease:
+    if: >
+      github.event.action != 'closed' &&
+      github.event.pull_request.base.ref == 'main'
+    needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
-    outputs:
-      tag: ${{ steps.create.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
 
-      - uses: actions/setup-python@v5
+      - uses: actions/download-artifact@v4
         with:
-          python-version: '3.10'
-
-      - name: Get version from hatch-vcs
-        id: version
-        run: |
-          pip install hatch hatch-vcs
-          version=$(hatch version)
-          echo "version=$version" >> $GITHUB_OUTPUT
+          name: extension-artifacts
+          path: dist/
 
       - name: Create or update prerelease
         id: create
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tag="v${{ steps.version.outputs.version }}-pr${{ github.event.pull_request.number }}"
+          tag="pr-${{ github.event.pull_request.number }}"
           echo "tag=$tag" >> $GITHUB_OUTPUT
 
           gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
@@ -48,7 +46,8 @@ jobs:
           **Branch:** \`${{ github.event.pull_request.head.ref }}\`
           **Commit:** ${{ github.sha }}" \
             --prerelease \
-            --target "${{ github.sha }}"
+            --target "${{ github.sha }}" \
+            dist/*.whl
 
       - name: Comment on PR
         env:
@@ -70,30 +69,17 @@ jobs:
             gh pr comment "${{ github.event.pull_request.number }}" --body "$comment_body"
           fi
 
-  build:
-    needs: create_prerelease
-    uses: ./.github/workflows/build-wheel.yml
-    with:
-      release_tag: ${{ needs.create_prerelease.outputs.tag }}
-    permissions:
-      contents: write
-
   cleanup:
-    if: github.event.action == 'closed'
+    if: >
+      github.event.action == 'closed' &&
+      github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-
       - name: Delete PR prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pr_num="${{ github.event.pull_request.number }}"
-          tags=$(gh release list --limit 100 --json tagName \
-            --jq ".[].tagName | select(endswith(\"-pr${pr_num}\"))" 2>/dev/null || true)
-          for tag in $tags; do
-            echo "Deleting $tag"
-            gh release delete "$tag" --yes --cleanup-tag || true
-          done
+          tag="pr-${{ github.event.pull_request.number }}"
+          gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true

@@ -11,9 +11,10 @@ Uses [hatch-vcs](https://github.com/ofek/hatch-vcs) - versions from git tags.
    git push origin vX.Y.Z
    ```
 3. Create a GitHub Release from the tag
-4. The `build-wheel.yml` workflow auto-builds and attaches the wheel
+4. The `build-wheel.yml` workflow runs CI via `build.yml` and attaches the wheel
 
-## PR Prereleases
+## CI
 
-PRs against `main` auto-create a prerelease with a built wheel.
+All PRs run CI (`build.yml`) via the `pr-prerelease.yml` workflow.
+PRs against `main` also create a prerelease with the built wheel.
 Install link is posted as a PR comment. Cleaned up on PR close.
