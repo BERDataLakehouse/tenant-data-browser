@@ -52,11 +52,10 @@ class GroupsHandler(BaseHandler):
         """
         GET /api/tenant-data-browser/groups
 
-        Returns user's groups and mock status.
+        Returns user's groups.
         """
         try:
             result = get_my_groups(return_json=False)
-            result["using_mocks"] = using_mocks
             self.write_json(result)
         except Exception as e:
             logger.exception("Error fetching groups")

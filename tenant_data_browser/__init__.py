@@ -21,8 +21,10 @@ def _jupyter_server_extension_points():
 
 
 def _load_jupyter_server_extension(server_app):
-    from .handlers import setup_handlers
+    from .handlers import setup_handlers, using_mocks
     setup_handlers(server_app.web_app)
+    page_config = server_app.web_app.settings.setdefault('page_config_data', {})
+    page_config['tenantDataBrowserUsingMocks'] = str(using_mocks).lower()
     server_app.log.info("Tenant Data Browser server extension loaded")
 
 

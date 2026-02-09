@@ -15,7 +15,6 @@ export interface IGroupsResponse {
   username: string;
   groups: string[];
   group_count: number;
-  using_mocks: boolean;
 }
 
 /** Namespace prefix info */
@@ -53,15 +52,23 @@ async function serverGet<T>(path: string, params?: URLSearchParams): Promise<T> 
   const response = await ServerConnection.makeRequest(requestUrl, {}, settings);
 
   if (!response.ok) {
-    const data = (await response.json()) as IErrorResponse;
-    throw new Error(data.error || `Request failed: ${response.status}`);
+    let message = `Request failed: ${response.status}`;
+    try {
+      const data = (await response.json()) as IErrorResponse;
+      if (data.error) {
+        message = data.error;
+      }
+    } catch {
+      // Response body is not JSON (e.g., HTML from a proxy error)
+    }
+    throw new Error(message);
   }
 
   return response.json() as Promise<T>;
 }
 
 /**
- * Fetch user's groups and mock status.
+ * Fetch user's groups.
  */
 export async function fetchGroups(): Promise<IGroupsResponse> {
   return serverGet<IGroupsResponse>('groups');
