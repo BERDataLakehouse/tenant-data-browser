@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
+    "jupyter_server>=2.0.0",
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
 
@@ -41,6 +42,7 @@ exclude = [".github", "binder"]
 [tool.hatch.build.targets.wheel.shared-data]
 "tenant_data_browser/labextension" = "share/jupyter/labextensions/tenant-data-browser"
 "install.json" = "share/jupyter/labextensions/tenant-data-browser/install.json"
+"jupyter-config/server-config" = "etc/jupyter/jupyter_server_config.d"
 
 [tool.hatch.build.hooks.version]
 path = "tenant_data_browser/_version.py"
@@ -66,3 +68,8 @@ build_dir = "tenant_data_browser/labextension"
 
 [tool.check-wheel-contents]
 ignore = ["W002"]
+
+[dependency-groups]
+dev = [
+    "jupyterlab>=4.5.3",
+]

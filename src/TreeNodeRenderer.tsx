@@ -1,5 +1,4 @@
 import React, { FC, useEffect, useCallback } from 'react';
-import { SessionContext } from '@jupyterlab/apputils';
 import { useQuery } from '@tanstack/react-query';
 import { NodeRendererProps } from 'react-arborist';
 import { Box, IconButton, Stack, Typography } from '@mui/material';
@@ -29,7 +28,6 @@ const actionButtonSx = {
 
 /** Props for the TreeNodeRenderer component */
 interface ITreeNodeRendererProps extends NodeRendererProps<TreeNodeType> {
-  sessionContext: SessionContext;
   onNodeUpdate: TreeNodeMutator;
   /** Callback to open context menu from button click */
   onContextMenuButton: (
@@ -80,7 +78,6 @@ export const TreeNodeRenderer: FC<ITreeNodeRendererProps> = ({
   style,
   dragHandle,
   tree,
-  sessionContext,
   onNodeUpdate,
   onContextMenuButton,
   onContextMenuRightClick,
@@ -106,7 +103,7 @@ export const TreeNodeRenderer: FC<ITreeNodeRendererProps> = ({
     enabled: shouldLoadChildren,
     queryKey: ['tree-children', node.id],
     queryFn: () =>
-      treeQueryManager.loadChildNodesForNode(node.id, treeData, sessionContext),
+      treeQueryManager.loadChildNodesForNode(node.id, treeData),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     retry: 2,
     retryDelay: 1000

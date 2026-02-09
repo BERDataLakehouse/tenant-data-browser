@@ -6,19 +6,16 @@ import {
   ListItemText,
   Divider
 } from '@mui/material';
-import { SessionContext } from '@jupyterlab/apputils';
 import { IMenuItem, IMenuServices } from './sharedTypes';
 import { IContextMenu } from './hooks/useContextMenu';
 
 interface IContextMenuProps {
   state: IContextMenu;
-  sessionContext: SessionContext | null;
   services: IMenuServices;
 }
 
 export const ContextMenu: FC<IContextMenuProps> = ({
   state,
-  sessionContext,
   services
 }) => {
   const { node, anchorPosition, isOpen, close } = state;
@@ -36,7 +33,7 @@ export const ContextMenu: FC<IContextMenuProps> = ({
     <MenuItem
       key={index}
       onClick={() => {
-        item.action(node, sessionContext, services);
+        item.action(node, services);
         close();
       }}
     >

@@ -1,5 +1,4 @@
 import React from 'react';
-import { SessionContext } from '@jupyterlab/apputils';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { INotebookTracker } from '@jupyterlab/notebook';
 
@@ -23,11 +22,7 @@ export interface IMenuItem<T extends string = string> {
   /** If true, render as icon button next to the ellipsis menu */
   showAsButton?: boolean;
   /** Action to perform when menu item is clicked */
-  action: (
-    node: TreeNodeType<T>,
-    sessionContext: SessionContext | null,
-    services: IMenuServices
-  ) => void;
+  action: (node: TreeNodeType<T>, services: IMenuServices) => void;
 }
 
 /**
@@ -82,14 +77,11 @@ export interface ITreeDataProvider<T extends string = string> {
   /** Array of node types that are parent nodes (can have children) */
   parentNodeTypes: T[];
   /** Function to fetch the root-level nodes for this provider */
-  fetchRootNodes: (
-    sessionContext: SessionContext
-  ) => Promise<BaseTreeNodeType<T>[]>;
+  fetchRootNodes: () => Promise<BaseTreeNodeType<T>[]>;
   /** Map of node type to child fetching function */
   fetchChildNodes: {
     [K in T]?: (
-      node: BaseTreeNodeType<K>,
-      sessionContext: SessionContext
+      node: BaseTreeNodeType<K>
     ) => Promise<BaseTreeNodeType<T>[]>;
   };
   /** Custom icon for this provider's root node */

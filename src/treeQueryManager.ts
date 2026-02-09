@@ -1,5 +1,4 @@
 import React from 'react';
-import { SessionContext } from '@jupyterlab/apputils';
 import {
   BaseTreeNodeType,
   TreeNodeType,
@@ -40,22 +39,20 @@ function createTreeQueryManager(dataProviders: ITreeDataProvider[]) {
 
   // Function to fetch root nodes for a specific provider
   const fetchRootNodesForProvider = async (
-    providerName: string,
-    sessionContext: SessionContext
+    providerName: string
   ): Promise<TreeNodeType[]> => {
     const provider = dataProviders.find(p => p.name === providerName);
     if (!provider) {
       throw new Error(`Tree data provider '${providerName}' not found`);
     }
-    const nodes = await provider.fetchRootNodes(sessionContext);
+    const nodes = await provider.fetchRootNodes();
     return applyProviderProperties(nodes, provider);
   };
 
   // Function to load child nodes for a specific node
   const loadChildNodesForNode = async (
     nodeId: string,
-    treeData: TreeNodeType[],
-    sessionContext: SessionContext
+    treeData: TreeNodeType[]
   ): Promise<TreeNodeType[]> => {
     // Find the node in the tree
     const nodeLocation = findNodeInTree(nodeId, treeData);
@@ -78,7 +75,7 @@ function createTreeQueryManager(dataProviders: ITreeDataProvider[]) {
       throw new Error(`No child loader found for node type '${node.type}'`);
     }
 
-    const childNodes = await childLoader(node, sessionContext);
+    const childNodes = await childLoader(node);
     return applyProviderProperties(childNodes, provider);
   };
 

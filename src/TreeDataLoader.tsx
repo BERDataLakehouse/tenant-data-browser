@@ -1,5 +1,4 @@
 import React, { FC, useEffect } from 'react';
-import { SessionContext } from '@jupyterlab/apputils';
 import { useQuery } from '@tanstack/react-query';
 import { TreeNodeType, TreeNodeMutator } from './sharedTypes';
 import { treeQueryManager } from './treeQueryManager';
@@ -7,7 +6,6 @@ import { showErrorWithRetry } from './utils/errorUtil';
 
 interface ITreeDataLoaderProps {
   treeData: TreeNodeType[];
-  sessionContext: SessionContext;
   onNodeUpdate: TreeNodeMutator;
 }
 
@@ -19,7 +17,6 @@ interface ITreeDataLoaderProps {
  */
 export const TreeDataLoader: FC<ITreeDataLoaderProps> = ({
   treeData,
-  sessionContext,
   onNodeUpdate
 }) => {
   return (
@@ -30,7 +27,6 @@ export const TreeDataLoader: FC<ITreeDataLoaderProps> = ({
           key={providerName}
           providerName={providerName}
           treeData={treeData}
-          sessionContext={sessionContext}
           onNodeUpdate={onNodeUpdate}
         />
       ))}
@@ -41,7 +37,6 @@ export const TreeDataLoader: FC<ITreeDataLoaderProps> = ({
 interface IRootDataLoaderProps {
   providerName: string;
   treeData: TreeNodeType[];
-  sessionContext: SessionContext;
   onNodeUpdate: TreeNodeMutator;
 }
 
@@ -55,7 +50,6 @@ interface IRootDataLoaderProps {
 const RootDataLoader: FC<IRootDataLoaderProps> = ({
   providerName,
   treeData,
-  sessionContext,
   onNodeUpdate
 }) => {
   const rootNode = treeData.find(node => node.name === providerName);
@@ -64,8 +58,7 @@ const RootDataLoader: FC<IRootDataLoaderProps> = ({
   const rootNodesQuery = useQuery({
     enabled: Boolean(rootNode && !rootNode.children),
     queryKey: ['tree-root', providerName],
-    queryFn: () =>
-      treeQueryManager.fetchRootNodesForProvider(providerName, sessionContext),
+    queryFn: () => treeQueryManager.fetchRootNodesForProvider(providerName),
     staleTime: 10 * 60 * 1000, // Cache for 10 minutes
     retry: 3,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)

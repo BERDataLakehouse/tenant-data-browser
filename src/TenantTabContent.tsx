@@ -1,22 +1,12 @@
 import React, { FC, useState, useEffect } from 'react';
 import { Box, Typography } from '@mui/material';
-import { JupyterFrontEnd } from '@jupyterlab/application';
-import { SessionContext } from '@jupyterlab/apputils';
 import { useQuery } from '@tanstack/react-query';
 import { TenantTabTarget, UpdateTenantTabSelectionFn } from './tenantTab';
-import {
-  useSessionContext,
-  queryKernel,
-  parseKernelOutputJSON
-} from './components/kernelCommunication';
 import { fetchFilteredDatabases } from './utils/databaseUtils';
-
-const BERDL_METHODS_IMPORT =
-  'import tenant_data_browser; (get_table_schema, get_databases, get_tables, get_my_groups, get_namespace_prefix, using_mocks) = tenant_data_browser.get_cdm_methods();';
+import { fetchTables, fetchSchema } from './api';
 
 interface ITenantTabContentProps {
   target: TenantTabTarget;
-  jupyterApp: JupyterFrontEnd;
   /** Callback to register a function for updating selection from outside */
   onRegisterUpdateCallback?: (callback: UpdateTenantTabSelectionFn) => void;
 }
@@ -183,32 +173,15 @@ const TablesList: FC<{
 const TableDataDictionary: FC<{
   databaseName: string | null;
   tableName: string | null;
-  sessionContext: SessionContext | undefined;
-}> = ({ databaseName, tableName, sessionContext }) => {
+}> = ({ databaseName, tableName }) => {
   const {
     data: schema,
     isLoading,
     error
   } = useQuery({
     queryKey: ['tableSchema', databaseName, tableName],
-    queryFn: async () => {
-      if (!sessionContext) {
-        throw new Error('No session');
-      }
-      const { data, error } = await queryKernel(
-        `${BERDL_METHODS_IMPORT} result = get_table_schema("${databaseName}", "${tableName}", return_json=True); result`,
-        sessionContext
-      );
-      if (error) {
-        throw error;
-      }
-      const schema = parseKernelOutputJSON<string[]>(data);
-      if (!schema) {
-        throw new Error('No schema data returned');
-      }
-      return schema;
-    },
-    enabled: !!databaseName && !!tableName && !!sessionContext
+    queryFn: () => fetchSchema(databaseName!, tableName!),
+    enabled: !!databaseName && !!tableName
   });
 
   const showEmptyState = !databaseName || !tableName;
@@ -279,15 +252,8 @@ const getInitialTable = (target: TenantTabTarget): string | null => {
 /** Main tenant tab content */
 export const TenantTabContent: FC<ITenantTabContentProps> = ({
   target,
-  jupyterApp,
   onRegisterUpdateCallback
 }) => {
-  const {
-    sessionContext,
-    error: sessionError,
-    isConnecting
-  } = useSessionContext(jupyterApp);
-
   const [selectedDatabase, setSelectedDatabase] = useState<string | null>(
     getInitialDatabase(target)
   );
@@ -310,32 +276,13 @@ export const TenantTabContent: FC<ITenantTabContentProps> = ({
 
   const databasesQuery = useQuery({
     queryKey: ['databases', target.tenant],
-    queryFn: () => {
-      if (!sessionContext) {
-        throw new Error('No session context');
-      }
-      return fetchFilteredDatabases(sessionContext, target.tenant);
-    },
-    enabled: !!sessionContext
+    queryFn: () => fetchFilteredDatabases(target.tenant)
   });
 
   const tablesQuery = useQuery({
     queryKey: ['tables', selectedDatabase],
-    queryFn: async () => {
-      if (!sessionContext || !selectedDatabase) {
-        throw new Error('No session context or database');
-      }
-      const { data, error } = await queryKernel(
-        `${BERDL_METHODS_IMPORT} result = get_tables("${selectedDatabase}", use_hms=True, return_json=True); result`,
-        sessionContext
-      );
-      if (error) {
-        throw error;
-      }
-      const tables = parseKernelOutputJSON<string[]>(data);
-      return tables || [];
-    },
-    enabled: !!sessionContext && !!selectedDatabase
+    queryFn: () => fetchTables(selectedDatabase!),
+    enabled: !!selectedDatabase
   });
 
   // Clear table selection when database changes from initial target
@@ -354,22 +301,6 @@ export const TenantTabContent: FC<ITenantTabContentProps> = ({
   const handleTableSelect = (table: string) => {
     setSelectedTable(table);
   };
-
-  if (isConnecting) {
-    return (
-      <Box sx={{ p: 3, color: '#666', fontSize: '13px' }}>
-        Connecting to kernel...
-      </Box>
-    );
-  }
-
-  if (sessionError) {
-    return (
-      <Box sx={{ p: 3, color: '#d32f2f', fontSize: '13px' }}>
-        Failed to connect: {sessionError.message}
-      </Box>
-    );
-  }
 
   const tenantLabel = target.tenant || 'User Data';
 
@@ -474,7 +405,6 @@ export const TenantTabContent: FC<ITenantTabContentProps> = ({
             <TableDataDictionary
               databaseName={selectedDatabase}
               tableName={selectedTable}
-              sessionContext={sessionContext}
             />
           </Box>
         </Box>

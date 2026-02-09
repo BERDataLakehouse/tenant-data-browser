@@ -96,7 +96,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
           { client: queryClient },
           React.createElement(TenantTabContent, {
             target,
-            jupyterApp: app,
             onRegisterUpdateCallback
           })
         )
