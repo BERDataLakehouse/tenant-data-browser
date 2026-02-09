@@ -11,9 +11,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { BaseTreeNodeType, ITreeDataProvider } from '../sharedTypes';
 import { CMD_OPEN_TAB, TenantTabTarget } from '../tenantTab';
-import { fetchGroups, fetchTables, IGroupsResponse } from '../api';
+import { fetchGroups, fetchDatabases, fetchTables, IGroupsResponse } from '../api';
 import { insertCodeCell } from '../utils/notebookUtils';
-import { fetchFilteredDatabases } from '../utils/databaseUtils';
 
 const PERSONAL_NODE_ID = '__user_databases__';
 
@@ -165,7 +164,7 @@ export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
     userData: async (
       node: BaseTreeNodeType<'userData'>
     ): Promise<BaseTreeNodeType<'database'>[]> => {
-      const databases = await fetchFilteredDatabases(undefined);
+      const databases = await fetchDatabases(undefined);
       return databases.map(databaseName => ({
         id: `${node.id}/${databaseName}`,
         name: databaseName,
@@ -176,7 +175,7 @@ export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
     tenant: async (
       node: BaseTreeNodeType<'tenant'>
     ): Promise<BaseTreeNodeType<'database'>[]> => {
-      const databases = await fetchFilteredDatabases(node.name);
+      const databases = await fetchDatabases(node.name);
       return databases.map(databaseName => ({
         id: `${node.id}/${databaseName}`,
         name: databaseName,

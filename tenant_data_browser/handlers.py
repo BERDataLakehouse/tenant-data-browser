@@ -5,6 +5,7 @@ Provides REST API endpoints that proxy calls to the CDM data access methods,
 with automatic fallback to mock data when berdl_notebook_utils is not installed.
 """
 
+import asyncio
 import json
 import logging
 from typing import Any
@@ -31,6 +32,11 @@ logger = logging.getLogger(__name__)
 class BaseHandler(APIHandler):
     """Base handler with common utilities."""
 
+    async def run_sync(self, fn, *args, **kwargs):
+        """Run a blocking function in a thread pool executor."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, lambda: fn(*args, **kwargs))
+
     def write_json(self, data: dict[str, Any] | list, status: int = 200) -> None:
         """Write JSON response."""
         self.set_status(status)
@@ -48,14 +54,14 @@ class GroupsHandler(BaseHandler):
     """Handler for fetching user's group memberships."""
 
     @tornado.web.authenticated
-    def get(self) -> None:
+    async def get(self) -> None:
         """
         GET /api/tenant-data-browser/groups
 
         Returns user's groups.
         """
         try:
-            result = get_my_groups(return_json=False)
+            result = await self.run_sync(get_my_groups, return_json=False)
             self.write_json(result)
         except Exception as e:
             logger.exception("Error fetching groups")
@@ -63,25 +69,30 @@ class GroupsHandler(BaseHandler):
 
 
 class DatabasesHandler(BaseHandler):
-    """Handler for fetching databases with namespace prefix."""
+    """Handler for fetching databases filtered by namespace prefix."""
 
     @tornado.web.authenticated
-    def get(self) -> None:
+    async def get(self) -> None:
         """
         GET /api/tenant-data-browser/databases?tenant=<name>
 
-        Returns databases and namespace prefix info.
+        Returns databases filtered by namespace prefix.
         Optional tenant query parameter filters by tenant namespace.
         """
         try:
             tenant = self.get_argument("tenant", default=None)
 
-            databases = get_databases(
-                use_hms=True, return_json=False, filter_by_namespace=True
+            databases = await self.run_sync(
+                get_databases, use_hms=True, return_json=False, filter_by_namespace=True
             )
-            prefix = get_namespace_prefix(tenant=tenant, return_json=False)
+            prefix = await self.run_sync(get_namespace_prefix, tenant=tenant, return_json=False)
 
-            self.write_json({"databases": databases, "prefix": prefix})
+            # Filter databases by the relevant prefix
+            prefix_str = prefix.get('tenant_namespace_prefix') if tenant else prefix.get('user_namespace_prefix')
+            if prefix_str:
+                databases = [db for db in databases if db.startswith(prefix_str)]
+
+            self.write_json(databases)
         except Exception as e:
             logger.exception("Error fetching databases")
             self.write_error_json(str(e), status=500)
@@ -91,7 +102,7 @@ class TablesHandler(BaseHandler):
     """Handler for fetching tables in a database."""
 
     @tornado.web.authenticated
-    def get(self) -> None:
+    async def get(self) -> None:
         """
         GET /api/tenant-data-browser/tables?database=<name>
 
@@ -104,7 +115,7 @@ class TablesHandler(BaseHandler):
             return
 
         try:
-            tables = get_tables(database, use_hms=True, return_json=False)
+            tables = await self.run_sync(get_tables, database, use_hms=True, return_json=False)
             self.write_json(tables)
         except Exception as e:
             logger.exception(f"Error fetching tables for database {database}")
@@ -115,7 +126,7 @@ class SchemaHandler(BaseHandler):
     """Handler for fetching table schema."""
 
     @tornado.web.authenticated
-    def get(self) -> None:
+    async def get(self) -> None:
         """
         GET /api/tenant-data-browser/schema?database=<name>&table=<name>
 
@@ -131,31 +142,12 @@ class SchemaHandler(BaseHandler):
             return
 
         try:
-            schema = get_table_schema(database, table, return_json=False)
+            schema = await self.run_sync(get_table_schema, database, table, return_json=False)
             self.write_json(schema)
         except Exception as e:
             logger.exception(
                 f"Error fetching schema for {database}.{table}"
             )
-            self.write_error_json(str(e), status=500)
-
-
-class NamespacePrefixHandler(BaseHandler):
-    """Handler for fetching namespace prefix."""
-
-    @tornado.web.authenticated
-    def get(self) -> None:
-        """
-        GET /api/tenant-data-browser/namespace-prefix?tenant=<name>
-
-        Returns namespace prefix info. Optional tenant query parameter.
-        """
-        try:
-            tenant = self.get_argument("tenant", default=None)
-            result = get_namespace_prefix(tenant=tenant, return_json=False)
-            self.write_json(result)
-        except Exception as e:
-            logger.exception("Error fetching namespace prefix")
             self.write_error_json(str(e), status=500)
 
 
@@ -170,7 +162,6 @@ def setup_handlers(web_app: Any) -> None:
         (url_path_join(base_path, "databases"), DatabasesHandler),
         (url_path_join(base_path, "tables"), TablesHandler),
         (url_path_join(base_path, "schema"), SchemaHandler),
-        (url_path_join(base_path, "namespace-prefix"), NamespacePrefixHandler),
     ]
 
     web_app.add_handlers(host_pattern, handlers)

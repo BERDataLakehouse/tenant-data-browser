@@ -17,20 +17,6 @@ export interface IGroupsResponse {
   group_count: number;
 }
 
-/** Namespace prefix info */
-export interface INamespacePrefixResponse {
-  username: string;
-  user_namespace_prefix: string;
-  tenant: string | null;
-  tenant_namespace_prefix: string | null;
-}
-
-/** Response from the databases endpoint */
-export interface IDatabasesResponse {
-  databases: string[];
-  prefix: INamespacePrefixResponse;
-}
-
 /** Error response from server */
 interface IErrorResponse {
   error: string;
@@ -75,17 +61,15 @@ export async function fetchGroups(): Promise<IGroupsResponse> {
 }
 
 /**
- * Fetch databases with namespace prefix info.
- * @param tenant - Optional tenant name to get tenant-specific prefix
+ * Fetch databases filtered by namespace prefix.
+ * @param tenant - Optional tenant name to filter by tenant namespace
  */
-export async function fetchDatabases(
-  tenant?: string
-): Promise<IDatabasesResponse> {
+export async function fetchDatabases(tenant?: string): Promise<string[]> {
   const params = new URLSearchParams();
   if (tenant !== undefined) {
     params.set('tenant', tenant);
   }
-  return serverGet<IDatabasesResponse>('databases', params);
+  return serverGet<string[]>('databases', params);
 }
 
 /**
@@ -108,18 +92,4 @@ export async function fetchSchema(
 ): Promise<string[]> {
   const params = new URLSearchParams({ database, table });
   return serverGet<string[]>('schema', params);
-}
-
-/**
- * Fetch namespace prefix info.
- * @param tenant - Optional tenant name
- */
-export async function fetchNamespacePrefix(
-  tenant?: string
-): Promise<INamespacePrefixResponse> {
-  const params = new URLSearchParams();
-  if (tenant !== undefined) {
-    params.set('tenant', tenant);
-  }
-  return serverGet<INamespacePrefixResponse>('namespace-prefix', params);
 }

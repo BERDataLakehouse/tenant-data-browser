@@ -26,7 +26,3 @@ def _load_jupyter_server_extension(server_app):
     page_config = server_app.web_app.settings.setdefault('page_config_data', {})
     page_config['tenantDataBrowserUsingMocks'] = str(using_mocks).lower()
     server_app.log.info("Tenant Data Browser server extension loaded")
-
-
-# Import and expose the setup function
-from .cdm_methods import get_cdm_methods

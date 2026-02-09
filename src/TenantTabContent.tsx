@@ -2,8 +2,7 @@ import React, { FC, useState, useEffect } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { TenantTabTarget, UpdateTenantTabSelectionFn } from './tenantTab';
-import { fetchFilteredDatabases } from './utils/databaseUtils';
-import { fetchTables, fetchSchema } from './api';
+import { fetchDatabases, fetchTables, fetchSchema } from './api';
 
 interface ITenantTabContentProps {
   target: TenantTabTarget;
@@ -276,7 +275,7 @@ export const TenantTabContent: FC<ITenantTabContentProps> = ({
 
   const databasesQuery = useQuery({
     queryKey: ['databases', target.tenant],
-    queryFn: () => fetchFilteredDatabases(target.tenant)
+    queryFn: () => fetchDatabases(target.tenant)
   });
 
   const tablesQuery = useQuery({
