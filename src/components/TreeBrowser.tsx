@@ -10,7 +10,6 @@ import { JupyterFrontEnd, ILayoutRestorer } from '@jupyterlab/application';
 import { IStateDB } from '@jupyterlab/statedb';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { Tree, TreeApi } from 'react-arborist';
-import { useSessionContext } from './kernelCommunication';
 import {
   TreeNodeType,
   TreeNodeMutator,
@@ -24,7 +23,6 @@ import { useMockNotification } from '../hooks/useMockNotification';
 import { TreeDataLoader } from '../TreeDataLoader';
 import { TreeNodeRenderer } from '../TreeNodeRenderer';
 import { ContextMenu } from '../ContextMenu';
-import { showError } from '../utils/errorUtil';
 import { debounce } from '../utils/debounce';
 
 const STATE_KEY_OPEN_NODES = 'tenant-data-browser:open-nodes';
@@ -49,11 +47,6 @@ export const TreeBrowser: FC<ITreeBrowserProps> = ({
   stateDB,
   notebookTracker
 }) => {
-  const {
-    sessionContext,
-    error: sessionError,
-    isConnecting
-  } = useSessionContext(jupyterApp);
   const containerRef = useRef<HTMLDivElement>(null);
   const treeRef = useRef<TreeApi<TreeNodeType>>(null);
   const containerDimensions = useTreeDimensions(containerRef);
@@ -69,7 +62,7 @@ export const TreeBrowser: FC<ITreeBrowserProps> = ({
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
 
   // Check if mocks are active and show notification
-  useMockNotification(sessionContext);
+  useMockNotification();
 
   // Initialize tree with root nodes for each configured provider
   const [treeData, setTreeData] = useState<TreeNodeType[]>(
@@ -79,13 +72,6 @@ export const TreeBrowser: FC<ITreeBrowserProps> = ({
   // State for tree node restoration
   const [openNodeIds, setOpenNodeIds] = useState<string[]>([]);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
-
-  // Show session errors to user
-  useEffect(() => {
-    if (sessionError) {
-      showError(sessionError, 'Failed to connect to Jupyter kernel');
-    }
-  }, [sessionError]);
 
   // Restore saved open node state on mount
   useEffect(() => {
@@ -147,9 +133,9 @@ export const TreeBrowser: FC<ITreeBrowserProps> = ({
       item: IMenuItem
     ) => {
       event.stopPropagation();
-      item.action(node, sessionContext ?? null, services);
+      item.action(node, services);
     },
-    [sessionContext, services]
+    [services]
   );
 
   // Handler for node becoming active (touch devices)
@@ -168,56 +154,37 @@ export const TreeBrowser: FC<ITreeBrowserProps> = ({
         padding: '8px'
       }}
     >
-      {/* Kernel connection status */}
-      {isConnecting && (
-        <div style={{ padding: '8px', color: '#666', fontSize: '12px' }}>
-          Connecting to kernel...
-        </div>
-      )}
       {/* Invisible component that manages data loading for all providers */}
-      {sessionContext && (
-        <TreeDataLoader
-          treeData={treeData}
-          sessionContext={sessionContext}
-          onNodeUpdate={handleNodeUpdate}
-        />
-      )}
+      <TreeDataLoader treeData={treeData} onNodeUpdate={handleNodeUpdate} />
       {/* The actual tree UI component - takes full height */}
-      {sessionContext && (
-        <Tree
-          ref={treeRef}
-          data={treeData}
-          openByDefault={false}
-          width={containerDimensions.width}
-          height={containerDimensions.height}
-        >
-          {nodeProps => (
-            <TreeNodeRenderer
-              key={nodeProps.node.id}
-              {...nodeProps}
-              sessionContext={sessionContext}
-              onNodeUpdate={handleNodeUpdate}
-              onContextMenuButton={contextMenu.openFromButton}
-              onContextMenuRightClick={contextMenu.openFromRightClick}
-              onMenuItemClick={handleMenuItemClick}
-              services={services}
-              activeNodeId={activeNodeId}
-              contextMenuNodeId={contextMenu.node?.id ?? null}
-              onNodeActive={handleNodeActive}
-              onToggle={handleTreeStateChange}
-              restoreOpenNodeIds={hasUserInteracted ? [] : openNodeIds}
-              treeData={treeData}
-            />
-          )}
-        </Tree>
-      )}
+      <Tree
+        ref={treeRef}
+        data={treeData}
+        openByDefault={false}
+        width={containerDimensions.width}
+        height={containerDimensions.height}
+      >
+        {nodeProps => (
+          <TreeNodeRenderer
+            key={nodeProps.node.id}
+            {...nodeProps}
+            onNodeUpdate={handleNodeUpdate}
+            onContextMenuButton={contextMenu.openFromButton}
+            onContextMenuRightClick={contextMenu.openFromRightClick}
+            onMenuItemClick={handleMenuItemClick}
+            services={services}
+            activeNodeId={activeNodeId}
+            contextMenuNodeId={contextMenu.node?.id ?? null}
+            onNodeActive={handleNodeActive}
+            onToggle={handleTreeStateChange}
+            restoreOpenNodeIds={hasUserInteracted ? [] : openNodeIds}
+            treeData={treeData}
+          />
+        )}
+      </Tree>
 
       {/* Context menu */}
-      <ContextMenu
-        state={contextMenu}
-        sessionContext={sessionContext ?? null}
-        services={services}
-      />
+      <ContextMenu state={contextMenu} services={services} />
     </div>
   );
 };
