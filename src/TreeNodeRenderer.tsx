@@ -21,9 +21,9 @@ import { showErrorWithRetry } from './utils/errorUtil';
 
 /** Shared styling for action buttons */
 const actionButtonSx = {
-  backgroundColor: 'grey.200',
-  '&:hover': { backgroundColor: 'background.paper' },
-  '&:active': { backgroundColor: 'grey.300' }
+  backgroundColor: 'var(--jp-layout-color2)',
+  '&:hover': { backgroundColor: 'var(--jp-layout-color3)' },
+  '&:active': { backgroundColor: 'var(--jp-border-color2)' }
 };
 
 /** Props for the TreeNodeRenderer component */
