@@ -12,8 +12,9 @@
 }
 
 /* Theme all FontAwesome SVG icons in the tree to match native JupyterLab
-   icon colors. FontAwesome uses currentColor, so setting color is sufficient. */
-.cdm-tree-node-row .svg-inline--fa {
+   icon colors. FontAwesome uses currentColor, so setting color is sufficient.
+   Uses attribute selector to avoid stylelint class-pattern violation. */
+.cdm-tree-node-row svg[data-prefix] {
   color: var(--jp-inverse-layout-color3);
 }
 

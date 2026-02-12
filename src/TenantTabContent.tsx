@@ -46,9 +46,11 @@ const tableStyles = {
     }
   },
   rowSelected: {
-    backgroundColor: 'color-mix(in srgb, var(--jp-brand-color1) 25%, transparent)',
+    backgroundColor:
+      'color-mix(in srgb, var(--jp-brand-color1) 25%, transparent)',
     '&:hover': {
-      backgroundColor: 'color-mix(in srgb, var(--jp-brand-color1) 35%, transparent)'
+      backgroundColor:
+        'color-mix(in srgb, var(--jp-brand-color1) 35%, transparent)'
     }
   },
   rowAlt: {
