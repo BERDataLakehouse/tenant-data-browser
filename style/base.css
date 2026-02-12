@@ -4,6 +4,14 @@
     https://jupyterlab.readthedocs.io/en/stable/developer/css.html
 */
 
+/* Theme sidebar/tab icons to match native JupyterLab icon colors.
+   Setting fill on the SVG lets it cascade to paths naturally,
+   without overriding per-path fills on multi-path icons. */
+[data-icon='tenant-data-browser:tree-icon'] svg,
+[data-icon='tenant-data-browser:tenant-icon'] svg {
+  fill: var(--jp-inverse-layout-color3);
+}
+
 /* Tree node row needs relative positioning for absolute button container */
 .cdm-tree-node-row {
   position: relative;

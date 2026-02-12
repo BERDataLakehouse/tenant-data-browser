@@ -13,7 +13,7 @@ interface ITenantTabContentProps {
 /** Shared table styles */
 const tableStyles = {
   container: {
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--jp-border-color2)',
     borderRadius: '4px',
     overflow: 'hidden',
     height: '100%',
@@ -22,15 +22,15 @@ const tableStyles = {
   },
   header: {
     display: 'grid',
-    backgroundColor: '#f5f5f5',
-    borderBottom: '1px solid #e0e0e0',
+    backgroundColor: 'var(--jp-layout-color2)',
+    borderBottom: '1px solid var(--jp-border-color2)',
     fontWeight: 600,
     fontSize: '12px',
-    color: '#333'
+    color: 'var(--jp-ui-font-color0)'
   },
   headerCell: {
     padding: '8px 12px',
-    borderRight: '1px solid #e0e0e0'
+    borderRight: '1px solid var(--jp-border-color2)'
   },
   body: {
     flex: 1,
@@ -38,32 +38,32 @@ const tableStyles = {
   },
   row: {
     display: 'grid',
-    borderBottom: '1px solid #f0f0f0',
+    borderBottom: '1px solid var(--jp-border-color3)',
     fontSize: '12px',
     cursor: 'pointer',
     '&:hover': {
-      backgroundColor: '#f8f8f8'
+      backgroundColor: 'var(--jp-layout-color2)'
     }
   },
   rowSelected: {
-    backgroundColor: '#e3f2fd',
+    backgroundColor: 'var(--jp-brand-color3, var(--jp-layout-color3))',
     '&:hover': {
-      backgroundColor: '#e3f2fd'
+      backgroundColor: 'var(--jp-brand-color3, var(--jp-layout-color3))'
     }
   },
   rowAlt: {
-    backgroundColor: '#fafafa'
+    backgroundColor: 'var(--jp-layout-color1)'
   },
   cell: {
     padding: '6px 12px',
-    borderRight: '1px solid #f0f0f0',
+    borderRight: '1px solid var(--jp-border-color3)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const
   },
   emptyState: {
     padding: '16px',
-    color: '#999',
+    color: 'var(--jp-ui-font-color2)',
     fontSize: '12px',
     textAlign: 'center' as const
   }
@@ -85,7 +85,9 @@ const DatabasesList: FC<{
       <Box sx={tableStyles.body}>
         {isLoading && <Box sx={tableStyles.emptyState}>Loading...</Box>}
         {error && (
-          <Box sx={{ ...tableStyles.emptyState, color: '#d32f2f' }}>
+          <Box
+            sx={{ ...tableStyles.emptyState, color: 'var(--jp-error-color1)' }}
+          >
             Error: {error.message}
           </Box>
         )}
@@ -205,7 +207,9 @@ const TableDataDictionary: FC<{
           <Box sx={tableStyles.emptyState}>Loading...</Box>
         )}
         {!showEmptyState && error && (
-          <Box sx={{ ...tableStyles.emptyState, color: '#d32f2f' }}>
+          <Box
+            sx={{ ...tableStyles.emptyState, color: 'var(--jp-error-color1)' }}
+          >
             Error: {error instanceof Error ? error.message : 'Unknown error'}
           </Box>
         )}
@@ -312,7 +316,7 @@ export const TenantTabContent: FC<ITenantTabContentProps> = ({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: '#fff'
+        bgcolor: 'var(--jp-layout-color0)'
       }}
     >
       {/* Header */}
@@ -320,11 +324,17 @@ export const TenantTabContent: FC<ITenantTabContentProps> = ({
         sx={{
           px: 2,
           py: 1.5,
-          borderBottom: '1px solid #e0e0e0',
-          bgcolor: '#fafafa'
+          borderBottom: '1px solid var(--jp-border-color2)',
+          bgcolor: 'var(--jp-layout-color1)'
         }}
       >
-        <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>
+        <Typography
+          sx={{
+            fontSize: '14px',
+            fontWeight: 500,
+            color: 'var(--jp-ui-font-color0)'
+          }}
+        >
           Tenant Explorer:{' '}
           <Box component="span" sx={{ fontWeight: 600 }}>
             {tenantLabel}
@@ -396,7 +406,12 @@ export const TenantTabContent: FC<ITenantTabContentProps> = ({
           }}
         >
           <Typography
-            sx={{ fontSize: '13px', fontWeight: 600, color: '#333', mb: 1 }}
+            sx={{
+              fontSize: '13px',
+              fontWeight: 600,
+              color: 'var(--jp-ui-font-color0)',
+              mb: 1
+            }}
           >
             Table Data Dictionary
             {selectedTable && selectedDatabase
