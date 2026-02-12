@@ -36,7 +36,7 @@ class BaseHandler(APIHandler):
 
     async def run_sync(self, fn, *args, **kwargs):
         """Run a blocking function in a thread pool executor."""
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await asyncio.wait_for(
             loop.run_in_executor(None, lambda: fn(*args, **kwargs)),
             timeout=self.REQUEST_TIMEOUT,
@@ -123,7 +123,7 @@ class TablesHandler(BaseHandler):
             tables = await self.run_sync(get_tables, database, use_hms=True, return_json=False)
             self.write_json(tables)
         except Exception as e:
-            logger.exception(f"Error fetching tables for database {database}")
+            logger.exception("Error fetching tables for database %s", database)
             self.write_error_json(str(e), status=500)
 
 
@@ -151,7 +151,7 @@ class SchemaHandler(BaseHandler):
             self.write_json(schema)
         except Exception as e:
             logger.exception(
-                f"Error fetching schema for {database}.{table}"
+                "Error fetching schema for %s.%s", database, table
             )
             self.write_error_json(str(e), status=500)
 
