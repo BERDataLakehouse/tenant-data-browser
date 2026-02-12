@@ -4,12 +4,17 @@
     https://jupyterlab.readthedocs.io/en/stable/developer/css.html
 */
 
-/* Theme sidebar/tab icons to match native JupyterLab icon colors.
-   Setting fill on the SVG lets it cascade to paths naturally,
-   without overriding per-path fills on multi-path icons. */
-[data-icon='tenant-data-browser:tree-icon'] svg,
-[data-icon='tenant-data-browser:tenant-icon'] svg {
+/* Theme sidebar/tab LabIcon SVG paths to match native JupyterLab icon colors.
+   FontAwesome SVG paths have no fill attribute, so we must target paths directly. */
+[data-icon='tenant-data-browser:tree-icon'] path,
+[data-icon='tenant-data-browser:tenant-icon'] path {
   fill: var(--jp-inverse-layout-color3);
+}
+
+/* Theme all FontAwesome SVG icons in the tree to match native JupyterLab
+   icon colors. FontAwesome uses currentColor, so setting color is sufficient. */
+.cdm-tree-node-row .svg-inline--fa {
+  color: var(--jp-inverse-layout-color3);
 }
 
 /* Tree node row needs relative positioning for absolute button container */
