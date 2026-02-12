@@ -14,10 +14,7 @@ interface IContextMenuProps {
   services: IMenuServices;
 }
 
-export const ContextMenu: FC<IContextMenuProps> = ({
-  state,
-  services
-}) => {
+export const ContextMenu: FC<IContextMenuProps> = ({ state, services }) => {
   const { node, anchorPosition, isOpen, close } = state;
 
   if (!node || !anchorPosition) {

@@ -25,7 +25,10 @@ interface IErrorResponse {
 /**
  * Make an authenticated GET request to the server extension.
  */
-async function serverGet<T>(path: string, params?: URLSearchParams): Promise<T> {
+async function serverGet<T>(
+  path: string,
+  params?: URLSearchParams
+): Promise<T> {
   const settings = ServerConnection.makeSettings();
   let requestUrl = URLExt.join(settings.baseUrl, API_BASE, path);
   if (params) {

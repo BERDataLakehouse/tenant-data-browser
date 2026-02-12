@@ -1,7 +1,7 @@
 {
-    "ServerApp": {
-        "jpserver_extensions": {
-            "tenant_data_browser": true
-        }
+  "ServerApp": {
+    "jpserver_extensions": {
+      "tenant_data_browser": true
     }
+  }
 }

@@ -155,10 +155,7 @@ export const TreeBrowser: FC<ITreeBrowserProps> = ({
       }}
     >
       {/* Invisible component that manages data loading for all providers */}
-      <TreeDataLoader
-        treeData={treeData}
-        onNodeUpdate={handleNodeUpdate}
-      />
+      <TreeDataLoader treeData={treeData} onNodeUpdate={handleNodeUpdate} />
       {/* The actual tree UI component - takes full height */}
       <Tree
         ref={treeRef}
@@ -187,10 +184,7 @@ export const TreeBrowser: FC<ITreeBrowserProps> = ({
       </Tree>
 
       {/* Context menu */}
-      <ContextMenu
-        state={contextMenu}
-        services={services}
-      />
+      <ContextMenu state={contextMenu} services={services} />
     </div>
   );
 };

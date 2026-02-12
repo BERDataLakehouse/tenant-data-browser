@@ -11,7 +11,12 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { BaseTreeNodeType, ITreeDataProvider } from '../sharedTypes';
 import { CMD_OPEN_TAB, TenantTabTarget } from '../tenantTab';
-import { fetchGroups, fetchDatabases, fetchTables, IGroupsResponse } from '../api';
+import {
+  fetchGroups,
+  fetchDatabases,
+  fetchTables,
+  IGroupsResponse
+} from '../api';
 import { insertCodeCell } from '../utils/notebookUtils';
 
 const PERSONAL_NODE_ID = '__user_databases__';

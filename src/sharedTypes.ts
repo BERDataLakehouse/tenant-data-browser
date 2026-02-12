@@ -80,9 +80,7 @@ export interface ITreeDataProvider<T extends string = string> {
   fetchRootNodes: () => Promise<BaseTreeNodeType<T>[]>;
   /** Map of node type to child fetching function */
   fetchChildNodes: {
-    [K in T]?: (
-      node: BaseTreeNodeType<K>
-    ) => Promise<BaseTreeNodeType<T>[]>;
+    [K in T]?: (node: BaseTreeNodeType<K>) => Promise<BaseTreeNodeType<T>[]>;
   };
   /** Custom icon for this provider's root node */
   icon?: React.ReactNode;
