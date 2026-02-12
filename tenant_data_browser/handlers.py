@@ -32,10 +32,15 @@ logger = logging.getLogger(__name__)
 class BaseHandler(APIHandler):
     """Base handler with common utilities."""
 
+    REQUEST_TIMEOUT = 60  # seconds
+
     async def run_sync(self, fn, *args, **kwargs):
         """Run a blocking function in a thread pool executor."""
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, lambda: fn(*args, **kwargs))
+        return await asyncio.wait_for(
+            loop.run_in_executor(None, lambda: fn(*args, **kwargs)),
+            timeout=self.REQUEST_TIMEOUT,
+        )
 
     def write_json(self, data: dict[str, Any] | list, status: int = 200) -> None:
         """Write JSON response."""

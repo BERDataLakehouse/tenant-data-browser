@@ -49,7 +49,7 @@ def get_cdm_methods():
             return result_dict
 
         return get_table_schema, get_databases, get_tables, get_my_groups, get_namespace_prefix, False
-    except ImportError as e:
+    except Exception as e:
         logger.warning("BERDL import failed: %s", e)
         logger.info("Using mock functions")
 

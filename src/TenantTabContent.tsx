@@ -46,7 +46,10 @@ const tableStyles = {
     }
   },
   rowSelected: {
-    backgroundColor: '#e3f2fd'
+    backgroundColor: '#e3f2fd',
+    '&:hover': {
+      backgroundColor: '#e3f2fd'
+    }
   },
   rowAlt: {
     backgroundColor: '#fafafa'
