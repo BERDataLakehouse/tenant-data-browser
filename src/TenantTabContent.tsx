@@ -85,7 +85,9 @@ const DatabasesList: FC<{
       <Box sx={tableStyles.body}>
         {isLoading && <Box sx={tableStyles.emptyState}>Loading...</Box>}
         {error && (
-          <Box sx={{ ...tableStyles.emptyState, color: 'var(--jp-error-color1)' }}>
+          <Box
+            sx={{ ...tableStyles.emptyState, color: 'var(--jp-error-color1)' }}
+          >
             Error: {error.message}
           </Box>
         )}
@@ -205,7 +207,9 @@ const TableDataDictionary: FC<{
           <Box sx={tableStyles.emptyState}>Loading...</Box>
         )}
         {!showEmptyState && error && (
-          <Box sx={{ ...tableStyles.emptyState, color: 'var(--jp-error-color1)' }}>
+          <Box
+            sx={{ ...tableStyles.emptyState, color: 'var(--jp-error-color1)' }}
+          >
             Error: {error instanceof Error ? error.message : 'Unknown error'}
           </Box>
         )}
@@ -324,7 +328,13 @@ export const TenantTabContent: FC<ITenantTabContentProps> = ({
           bgcolor: 'var(--jp-layout-color1)'
         }}
       >
-        <Typography sx={{ fontSize: '14px', fontWeight: 500, color: 'var(--jp-ui-font-color0)' }}>
+        <Typography
+          sx={{
+            fontSize: '14px',
+            fontWeight: 500,
+            color: 'var(--jp-ui-font-color0)'
+          }}
+        >
           Tenant Explorer:{' '}
           <Box component="span" sx={{ fontWeight: 600 }}>
             {tenantLabel}
@@ -396,7 +406,12 @@ export const TenantTabContent: FC<ITenantTabContentProps> = ({
           }}
         >
           <Typography
-            sx={{ fontSize: '13px', fontWeight: 600, color: 'var(--jp-ui-font-color0)', mb: 1 }}
+            sx={{
+              fontSize: '13px',
+              fontWeight: 600,
+              color: 'var(--jp-ui-font-color0)',
+              mb: 1
+            }}
           >
             Table Data Dictionary
             {selectedTable && selectedDatabase
