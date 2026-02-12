@@ -1,3 +1,8 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def get_cdm_methods():
     """
     Returns BERDL data access methods.
@@ -14,7 +19,7 @@ def get_cdm_methods():
             get_my_groups as _get_my_groups,
             get_namespace_prefix as _get_namespace_prefix,
         )
-        print("Using BERDL berdl_notebook_utils functions")
+        logger.info("Using BERDL berdl_notebook_utils functions")
 
         def get_my_groups(return_json=False):
             import json
@@ -34,6 +39,8 @@ def get_cdm_methods():
             result_dict = {
                 'username': result.username,
                 'user_namespace_prefix': result.user_namespace_prefix,
+                # Use getattr because these fields may not exist on the
+                # Pydantic model when tenant is None
                 'tenant': getattr(result, 'tenant', None),
                 'tenant_namespace_prefix': getattr(result, 'tenant_namespace_prefix', None),
             }
@@ -42,9 +49,9 @@ def get_cdm_methods():
             return result_dict
 
         return get_table_schema, get_databases, get_tables, get_my_groups, get_namespace_prefix, False
-    except ImportError as e:
-        print(f"BERDL import failed: {e}")
-        print("Using mock functions")
+    except Exception as e:
+        logger.warning("BERDL import failed: %s", e)
+        logger.info("Using mock functions")
 
     from .mock_definitions import get_table_schema, get_databases, get_tables, get_my_groups, get_namespace_prefix
 

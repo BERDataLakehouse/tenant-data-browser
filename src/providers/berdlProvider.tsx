@@ -1,5 +1,4 @@
 import React from 'react';
-import { SessionContext } from '@jupyterlab/apputils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faDatabase,
@@ -13,25 +12,16 @@ import {
 import { BaseTreeNodeType, ITreeDataProvider } from '../sharedTypes';
 import { CMD_OPEN_TAB, TenantTabTarget } from '../tenantTab';
 import {
-  parseKernelOutputJSON,
-  queryKernel
-} from '../components/kernelCommunication';
+  fetchGroups,
+  fetchDatabases,
+  fetchTables,
+  IGroupsResponse
+} from '../api';
 import { insertCodeCell } from '../utils/notebookUtils';
-import { fetchFilteredDatabases } from '../utils/databaseUtils';
-
-/** Response from get_my_groups function */
-interface IGroupsResponse {
-  username: string;
-  groups: string[];
-  group_count: number;
-}
 
 const PERSONAL_NODE_ID = '__user_databases__';
 
 type BerdlNodeType = 'userData' | 'tenant' | 'database' | 'table';
-
-const BERDL_METHODS_IMPORT =
-  'import tenant_data_browser; (get_table_schema, get_databases, get_tables, get_my_groups, get_namespace_prefix, using_mocks) = tenant_data_browser.get_cdm_methods();';
 
 // BERDL Database Provider - fetches tenant, database and table structure
 export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
@@ -51,7 +41,7 @@ export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
         label: 'Open in tab',
         icon: <FontAwesomeIcon size="sm" icon={faArrowUpRightFromSquare} />,
         showAsButton: true,
-        action: (_node, _ctx, services) => {
+        action: (_node, services) => {
           const target: TenantTabTarget = { type: 'tenant', tenant: undefined };
           services.app.commands.execute(CMD_OPEN_TAB, target);
         }
@@ -67,7 +57,7 @@ export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
         label: 'Open in tab',
         icon: <FontAwesomeIcon size="sm" icon={faArrowUpRightFromSquare} />,
         showAsButton: true,
-        action: (node, _ctx, services) => {
+        action: (node, services) => {
           const target: TenantTabTarget = { type: 'tenant', tenant: node.name };
           services.app.commands.execute(CMD_OPEN_TAB, target);
         }
@@ -83,7 +73,7 @@ export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
         label: 'Open in tab',
         icon: <FontAwesomeIcon size="sm" icon={faArrowUpRightFromSquare} />,
         showAsButton: true,
-        action: (node, _ctx, services) => {
+        action: (node, services) => {
           const target: TenantTabTarget = {
             type: 'database',
             databaseName: node.name,
@@ -100,7 +90,7 @@ export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
       {
         label: 'Insert snippet',
         icon: <FontAwesomeIcon size="sm" icon={faCode} />,
-        action: (node, _ctx, services) => {
+        action: (node, services) => {
           insertCodeCell(
             services.notebookTracker,
             `spark.sql(f"SHOW TABLES IN ${node.name}").show()`
@@ -113,7 +103,7 @@ export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
         label: 'Open in tab',
         icon: <FontAwesomeIcon size="sm" icon={faArrowUpRightFromSquare} />,
         showAsButton: true,
-        action: (node, _ctx, services) => {
+        action: (node, services) => {
           const target: TenantTabTarget = {
             type: 'table',
             tableName: node.name,
@@ -131,7 +121,7 @@ export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
       {
         label: 'Insert snippet',
         icon: <FontAwesomeIcon size="sm" icon={faCode} />,
-        action: (node, _ctx, services) => {
+        action: (node, services) => {
           const db = node.data?.database || '';
           insertCodeCell(
             services.notebookTracker,
@@ -141,22 +131,8 @@ export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
       }
     ]
   },
-  fetchRootNodes: async (sessionContext: SessionContext) => {
-    const { data, error } = await queryKernel(
-      `${BERDL_METHODS_IMPORT} result = get_my_groups(return_json=True); result`,
-      sessionContext
-    );
-
-    if (error) {
-      console.warn('BERDL provider: Failed to fetch tenants:', error);
-      throw error;
-    }
-
-    const groupsResponse = parseKernelOutputJSON<IGroupsResponse>(data);
-
-    if (!groupsResponse) {
-      return [];
-    }
+  fetchRootNodes: async () => {
+    const groupsResponse: IGroupsResponse = await fetchGroups();
 
     const nodes: BaseTreeNodeType<'userData' | 'tenant'>[] = [];
 
@@ -191,10 +167,9 @@ export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
   },
   fetchChildNodes: {
     userData: async (
-      node: BaseTreeNodeType<'userData'>,
-      sessionContext: SessionContext
+      node: BaseTreeNodeType<'userData'>
     ): Promise<BaseTreeNodeType<'database'>[]> => {
-      const databases = await fetchFilteredDatabases(sessionContext, undefined);
+      const databases = await fetchDatabases(undefined);
       return databases.map(databaseName => ({
         id: `${node.id}/${databaseName}`,
         name: databaseName,
@@ -203,10 +178,9 @@ export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
       }));
     },
     tenant: async (
-      node: BaseTreeNodeType<'tenant'>,
-      sessionContext: SessionContext
+      node: BaseTreeNodeType<'tenant'>
     ): Promise<BaseTreeNodeType<'database'>[]> => {
-      const databases = await fetchFilteredDatabases(sessionContext, node.name);
+      const databases = await fetchDatabases(node.name);
       return databases.map(databaseName => ({
         id: `${node.id}/${databaseName}`,
         name: databaseName,
@@ -215,23 +189,9 @@ export const berdlProvider: ITreeDataProvider<BerdlNodeType> = {
       }));
     },
     database: async (
-      node: BaseTreeNodeType<'database'>,
-      sessionContext: SessionContext
+      node: BaseTreeNodeType<'database'>
     ): Promise<BaseTreeNodeType<'table'>[]> => {
-      const { data, error } = await queryKernel(
-        `${BERDL_METHODS_IMPORT} result = get_tables("${node.name}", use_hms=True, return_json=True); result`,
-        sessionContext
-      );
-
-      if (error) {
-        console.warn(
-          `BERDL provider: Failed to fetch tables for database ${node.name}:`,
-          error
-        );
-        throw error;
-      }
-
-      const tables = parseKernelOutputJSON<string[]>(data);
+      const tables = await fetchTables(node.name);
 
       if (!tables) {
         return [];
